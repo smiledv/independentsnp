@@ -1,0 +1,75 @@
+#firt we need a vcf file of genotypes
+#then we use python to make the genotypic matrix with columns of individuals and rows of genotypes
+
+
+
+#then using unix we remove the first row
+
+sed '1d' geno.txt > geno.txt
+
+#using R we estimate the numbers
+
+Meff_PCA <- function(eigenValues, percentCut){
+  totalEigenValues <- sum(eigenValues)
+  myCut <- percentCut*totalEigenValues
+  num_Eigens <- length(eigenValues)
+  myEigenSum <- 0
+  index_Eigen <- 0
+  
+  for(i in 1:num_Eigens){
+    if(myEigenSum <= myCut){
+      myEigenSum <- myEigenSum + eigenValues[i]
+      index_Eigen <- i
+    }
+    else{
+      break
+    }
+  }	
+  return(index_Eigen)
+}
+
+#============================================================================
+# infer the cutoff => Meff
+inferCutoff <- function(dt_My){
+  CLD <- cor(dt_My)
+  eigen_My <- eigen(CLD)
+  
+  # PCA approach
+  eigenValues_dt <- abs(eigen_My$values)
+  Meff_PCA_gao <- Meff_PCA(eigenValues_dt, PCA_cutoff)
+  return(Meff_PCA_gao)
+}
+
+#============================================================================
+PCA_cutoff <- 0.995
+
+#============================================================================
+# fix length, simpleM
+mySNP_nonmissing <- read.table("geno.txt", colClasses="integer")		
+
+numLoci <- length(mySNP_nonmissing[, 1])
+
+simpleMeff <- NULL
+fixLength <- 133 
+i <- 1
+myStart <- 1
+myStop <- 1
+while(myStop < numLoci){
+  myDiff <- numLoci - myStop 
+  if(myDiff <= fixLength) break
+  
+  myStop <- myStart + i*fixLength - 1
+  snpInBlk <- t(mySNP_nonmissing[myStart:myStop, ])
+  MeffBlk <- inferCutoff(snpInBlk)
+  simpleMeff <- c(simpleMeff, MeffBlk)
+  myStart <- myStop+1
+}
+snpInBlk <- t(mySNP_nonmissing[myStart:numLoci, ])
+MeffBlk <- inferCutoff(snpInBlk)
+simpleMeff <- c(simpleMeff, MeffBlk)
+
+cat("Total number of SNPs is: ", numLoci, "\n")
+cat("Inferred Meff is: ", sum(simpleMeff), "\n")
+
+#============================================================================
+# end 
