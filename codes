@@ -1,7 +1,19 @@
 #firt we need a vcf file of genotypes
 #then we use python to make the genotypic matrix with columns of individuals and rows of genotypes
 
-
+import pandas as pd 
+import numpy as np
+import sys
+snp = pd.read_csv("data.vcf",delimiter=r"\s+",header=0,skiprows=34)
+snp2= snp.drop(['#CHROM','POS','ID','REF','ALT','QUAL','FILTER','INFO','FORMAT'],axis=1)
+snp3=snp2.transpose()
+snp3.iloc[:, 0:] = snp3.iloc[:, 0:].apply(lambda s: s.str[:3])
+snp4=snp3.replace(['0/0','0|0','1/0','0/1','1|0','0|1','1/1','1|1'],['0','0','1','1','1','1','2','2'])
+snp6= pd.DataFrame(snp4).reset_index(drop=False)
+snp7 = snp6.T
+snp8 = snp7.iloc[1: , :]
+snp9=snp8.reset_index(drop=True)
+snp9.to_csv('geno.txt', sep=' ',index=False,header=None)
 
 #then using unix we remove the first row
 
